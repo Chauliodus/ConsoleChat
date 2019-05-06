@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
-    std::string path; // = "C://Qt//Projects//Chat//chat.txt";
+    std::string path;
     int numberOfClients;
     inputFcn(path, numberOfClients);
 
