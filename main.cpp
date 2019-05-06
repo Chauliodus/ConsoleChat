@@ -7,7 +7,7 @@
 
 std::mutex mtx;
 
-void chat(const std::string& path, int index, const std::string& message, const int delay)
+void chat(const std::string& path, size_t id, const std::string& message, const size_t& delay)
 {
     while(1)
     {
@@ -24,8 +24,8 @@ void chat(const std::string& path, int index, const std::string& message, const 
         tm *timeinfo = localtime(&seconds);
         char* format = "%I:%M:%S";
         strftime(buffer, 80, format, timeinfo);
-        file << "[" << buffer << "]; " << index << ": " << message << std::endl;
-        std::cout << "[" << buffer << "]; " << index << ": " << message << std::endl;
+        file << "[" << buffer << "]; " << id << ": " << message << std::endl;
+        std::cout << "[" << buffer << "]; " << id << ": " << message << std::endl;
         file.close();
 
         mtx.unlock();
@@ -34,7 +34,7 @@ void chat(const std::string& path, int index, const std::string& message, const 
     }
 }
 
-void inputFcn(std::string& path, int& number)
+void inputFcn(std::string& path, size_t& number)
 {
     std::cout << "Input path: ";
     std::cin >> path;
@@ -42,11 +42,11 @@ void inputFcn(std::string& path, int& number)
     std::cin >> number;
 }
 
-void inputFcn2(int index, std::string& message, int& delay)
+void inputFcn2(size_t id, std::string& message, size_t& delay)
 {
-    std::cout << index + 1 << " message: ";
+    std::cout << id + 1 << " message: ";
     std::cin >> message;
-    std::cout << index + 1 << " delay: ";
+    std::cout << id + 1 << " delay: ";
     std::cin >> delay;
 }
 
@@ -55,30 +55,24 @@ int main(int argc, char *argv[])
     QCoreApplication a(argc, argv);
 
     std::string path;
-    int numberOfClients;
+    size_t numberOfClients;
     inputFcn(path, numberOfClients);
 
-    std::vector<std::string> messages;
-    std::vector<int> delays;
-    std::vector<std::thread> threads;
+    std::vector<std::string> vectorMessage;
+    std::vector<size_t> vectorDelay;
+    std::vector<std::thread> vectorThread;
     std::string message;
-    int delay;
+    size_t delay;
 
-    for(int i = 0; i < numberOfClients; i++)
+    for(size_t id = 0; id < numberOfClients; id++)
     {
-        inputFcn2(i, message, delay);
-        messages.push_back(message);
-        delays.push_back(delay);
+        inputFcn2(id, message, delay);
+        vectorMessage.push_back(message);
+        vectorDelay.push_back(delay);
     }
 
-    for(int i = 0; i < numberOfClients; i++)
-    {
-        threads.push_back(std::thread(chat, path, i + 1, messages[i], delays[i]));
-        //threads[i].join();
-    }
-
-    messages.clear();
-    delays.clear();
+    for(size_t id = 0; id < numberOfClients; id++)
+        vectorThread.push_back(std::thread(chat, path, id + 1, vectorMessage[id], vectorDelay[id]));
 
     return a.exec();
 }
