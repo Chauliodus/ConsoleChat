@@ -11,26 +11,26 @@ void chat(const std::string& path, size_t id, const std::string& message, const 
 {
     while(1)
     {
-        mtx.lock();
-
-        std::fstream file(path, std::ios_base::app);
-        if (!file.is_open())
-        {
-            std::cerr << "cannot open file " << path;
-            exit(0);
-        }
-        char buffer[80];
-        time_t seconds = time(NULL);
-        tm *timeinfo = localtime(&seconds);
-        char* format = "%I:%M:%S";
-        strftime(buffer, 80, format, timeinfo);
-        file << "[" << buffer << "]; " << id << ": " << message << std::endl;
-        std::cout << "[" << buffer << "]; " << id << ": " << message << std::endl;
-        file.close();
-
-        mtx.unlock();
-
         std::this_thread::sleep_for(std::chrono::seconds(delay));
+
+        {
+            std::lock_guard<std::mutex> lG(mtx);
+
+            std::fstream file(path, std::ios_base::app);
+            if (!file.is_open())
+            {
+                std::cerr << "cannot open file " << path;
+                exit(0);
+            }
+            char buffer[80];
+            time_t seconds = time(NULL);
+            tm *timeinfo = localtime(&seconds);
+            char* format = "%I:%M:%S";
+            strftime(buffer, 80, format, timeinfo);
+            file << "[" << buffer << "]; " << id << ": " << message << std::endl;
+            std::cout << "[" << buffer << "]; " << id << ": " << message << std::endl;
+            file.close();
+        }
     }
 }
 
@@ -44,10 +44,10 @@ void inputFcn(std::string& path, size_t& number)
 
 void inputFcn2(size_t id, std::string& message, size_t& delay)
 {
-    std::cout << id + 1 << " message: ";
-    std::cin >> message;
     std::cout << id + 1 << " delay: ";
     std::cin >> delay;
+    std::cout << id + 1 << " message: ";
+    std::cin >> message;
 }
 
 int main(int argc, char *argv[])
@@ -72,7 +72,13 @@ int main(int argc, char *argv[])
     }
 
     for(size_t id = 0; id < numberOfClients; id++)
-        vectorThread.push_back(std::thread(chat, path, id + 1, vectorMessage[id], vectorDelay[id]));
+    {
+        vectorThread.push_back(std::thread(chat, std::ref(path),
+                                           id + 1,
+                                           vectorMessage[id],
+                                           vectorDelay[id]));
+        vectorThread[id].detach();
+    }
 
     return a.exec();
 }
